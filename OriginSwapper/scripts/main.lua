@@ -1,8 +1,24 @@
 local UEHelpers = require("UEHelpers")
 
-local modDir = "C:/GOG Games/ManorLords/ManorLords/Binaries/Win64/ue4ss/Mods/OriginSwapper/"
-local configPath = modDir .. "config.ini"
-local logPath = modDir .. "OriginSwapper.log"
+local function resolvePath(filename)
+    local searchPaths = {
+        "ue4ss/Mods/OriginSwapper/" .. filename,
+        "Mods/OriginSwapper/" .. filename,
+        "OriginSwapper/" .. filename,
+        filename
+    }
+    for _, p in ipairs(searchPaths) do
+        local f = io.open(p, "r")
+        if f then
+            f:close()
+            return p
+        end
+    end
+    return "ue4ss/Mods/OriginSwapper/" .. filename
+end
+
+local configPath = resolvePath("config.ini")
+local logPath = resolvePath("OriginSwapper.log")
 local logFile = nil
 
 local ORIGIN_MAP = {
@@ -229,15 +245,16 @@ local function applyTargetOrigin()
     log("--------------------------------------------------")
 end
 
--- Hook SaveGameToSlot
-pcall(function()
-    RegisterHook("/Script/ManorLords.IoHandler:SaveGameToSlot", function(self, SaveGameObject, SlotName, ioCategory)
-        log("[HOOK] SaveGameToSlot called. Ensuring active origin is up-to-date...")
-        applyTargetOrigin()
+-- Hook SaveGameToSlot with safety delay to avoid early boot race conditions
+ExecuteWithDelay(4000, function()
+    pcall(function()
+        RegisterHook("/Script/ManorLords.IoHandler:SaveGameToSlot", function(self, SaveGameObject, SlotName, ioCategory)
+            log("[HOOK] SaveGameToSlot called. Ensuring active origin is up-to-date...")
+            applyTargetOrigin()
+        end)
+        log("Hook registered for /Script/ManorLords.IoHandler:SaveGameToSlot.")
     end)
-    log("Hook registered for /Script/ManorLords.IoHandler:SaveGameToSlot.")
 end)
-
 -- Register Configured Hotkey
 local keyConstant = Key[config.Hotkey] or Key.F6
 RegisterKeyBindAsync(keyConstant, {}, function()
