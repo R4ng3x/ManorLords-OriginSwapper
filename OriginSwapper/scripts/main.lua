@@ -245,16 +245,6 @@ local function applyTargetOrigin()
     log("--------------------------------------------------")
 end
 
--- Hook SaveGameToSlot with safety delay to avoid early boot race conditions
-ExecuteWithDelay(4000, function()
-    pcall(function()
-        RegisterHook("/Script/ManorLords.IoHandler:SaveGameToSlot", function(self, SaveGameObject, SlotName, ioCategory)
-            log("[HOOK] SaveGameToSlot called. Ensuring active origin is up-to-date...")
-            applyTargetOrigin()
-        end)
-        log("Hook registered for /Script/ManorLords.IoHandler:SaveGameToSlot.")
-    end)
-end)
 -- Register Configured Hotkey
 local keyConstant = Key[config.Hotkey] or Key.F6
 RegisterKeyBindAsync(keyConstant, {}, function()
